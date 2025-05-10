@@ -7,7 +7,275 @@
     generatePrivateKey,
     getPublicKey,
     getEventHash,
-    signEvent,
+    signEvent,<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>NOSTR MESSENGER</title>
+  <link href="https://cdn.jsdelivr.net/npm/tailwindcss@2.2.19/dist/tailwind.min.css" rel="stylesheet">
+  <style>
+    :root {
+      --nostr-purple: #7F00FF;
+      --nostr-purple-dark: #4B0082;
+      --nostr-text: #E0DAF5;
+    }
+    body {
+      background-color: var(--nostr-purple-dark);
+      color: var(--nostr-text);
+    }
+    .bg-npurple { background-color: var(--nostr-purple); }
+    .bg-npurple-dark { background-color: var(--nostr-purple-dark); }
+    .text-ntext { color: var(--nostr-text); }
+    .input-npurple {
+      background-color: var(--nostr-purple-dark);
+      border: 1px solid var(--nostr-purple);
+      color: var(--nostr-text);
+    }
+    .button-npurple {
+      background-color: var(--nostr-purple);
+      color: var(--nostr-text);
+    }
+    .button-npurple:hover {
+      background-color: var(--nostr-purple-dark);
+    }
+    .chat-window {
+      background-color: var(--nostr-purple-dark);
+      border-radius: 10px;
+      padding: 15px;
+      max-width: 400px;
+      width: 100%;
+      height: 500px;
+      overflow-y: auto;
+      box-shadow: 0 2px 10px rgba(0, 0, 0, 0.5);
+      display: flex;
+      flex-direction: column;
+    }
+    .message .text {
+      background-color: var(--nostr-purple);
+      color: var(--nostr-text);
+    }
+    .modal-backdrop {
+      background: rgba(0,0,0,0.7);
+    }
+  </style>
+  <script type="module">
+    import {
+      generatePrivateKey,
+      getPublicKey,
+      getEventHash,
+      signEvent,
+      relayInit
+    } from 'https://cdn.jsdelivr.net/npm/nostr-tools@1.17.0/+esm';
+    import { bech32 } from 'https://cdn.jsdelivr.net/npm/bech32@2.0.0/+esm';
+
+    function decodeNsec(nsec) {
+      const { words } = bech32.decode(nsec);
+      const data = bech32.fromWords(words);
+      return data.map(b => b.toString(16).padStart(2,'0')).join('');
+    }
+
+    (async () => {
+      const relay = relayInit('wss://relay.damus.io');
+      await relay.connect();
+      relay.on('connect', () => console.log(`Connected to ${relay.url}`));
+      relay.on('error', () => console.error(`Failed to connect to ${relay.url}`));
+
+      const sk = decodeNsec('your-nsec-key-here');
+      const pk = getPublicKey(sk);
+      const event = { kind:1, pubkey:pk, created_at:Math.floor(Date.now()/1000), tags:[], content:'Hello, Nostr!' };
+      event.id = getEventHash(event);
+      event.sig = await signEvent(event, sk);
+      await relay.publish(event);
+      const sub = relay.sub([{ kinds:[1], authors:[pk] }]);
+      sub.on('event', e => console.log('Received event:', e));
+    })();
+  </script>
+</head>
+<body class="min-h-screen flex items-center justify-center">
+  <div id="app" class="w-full flex justify-center"></div>
+
+  <!-- Add Friend / Settings Modal -->
+  <div id="modal" class="fixed inset-0 hidden items-center justify-center z-50">
+    <div class="modal-backdrop absolute inset-0"></div>
+    <div class="bg-npurple-dark rounded shadow-lg p-6 z-10 w-80">
+      <h2 id="modal-title" class="text-xl font-bold mb-4"></h2>
+      <div id="modal-body" class="space-y-3"></div>
+      <div class="flex justify-end mt-4 space-x-2">
+        <button onclick="closeModal()" class="px-4 py-2 rounded border border-ntext text-ntext">Cancel</button>
+        <button id="modal-save" class="px-4 py-2 rounded button-npurple">Save</button>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    const mockTestUser = {
+      username: "testuser",
+      displayName: "Test User",
+      profilePic: "https://via.placeholder.com/40",
+      bannerURL: "",
+      bio: "Feeling nostalgic 😎",
+      statusMessage: "",
+      friends: [
+        { username:"janedoe", displayName:"Jane Doe", status:"Online", profilePic:"https://image.nostr.build/d6660927e5c0747557d87c6ea015f8ac01d12fe659e2681a02797f1ffa7bd8b1.jpg" },
+        { username:"JackDorsey", displayName:"Jack Dorsey", status:"Online", profilePic:"https://imageio.forbes.com/specials-images/imageserve/681512de8fa115416db627be/Jack-Dorsey/0x0.jpg" },
+        { username:"bobsmith", displayName:"Bob Smith", status:"Online", profilePic:"https://bitcoin-cats.ca/nostr/senpaicat.png" }
+      ]
+    };
+
+    let user = null, currentChat = null;
+    const app = document.getElementById('app');
+    const modal = document.getElementById('modal');
+    const modalTitle = document.getElementById('modal-title');
+    const modalBody = document.getElementById('modal-body');
+    const modalSave = document.getElementById('modal-save');
+
+    function renderLogin() {
+      app.innerHTML = `
+        <div class="bg-npurple-dark p-6 rounded shadow w-96">
+          <h2 class="text-2xl font-bold text-center mb-4">NOSTR MESSENGER</h2>
+          <input class="w-full mb-2 p-2 rounded input-npurple" placeholder="NSEC" type="password" />
+          <div class="flex justify-between mb-2">
+            <button class="button-npurple px-4 py-2 rounded">Login</button>
+            <button class="border border-npurple px-4 py-2 rounded text-ntext">Sign Up</button>
+          </div>
+          <button onclick="loginTest()" class="w-full py-2 rounded border border-ntext text-ntext">Test Login</button>
+        </div>`;
+    }
+
+    function loginTest() { user = mockTestUser; renderFriendList(); }
+    function logout() { user = null; currentChat = null; renderLogin(); }
+
+    function renderFriendList() {
+      let friendsHTML = user.friends.map(f => `
+        <div onclick="openChat('${f.username}')" class="flex items-center gap-2 cursor-pointer hover:bg-npurple p-1 rounded">
+          <img src="${f.profilePic}" class="rounded-full w-8 h-8" />
+          <div>
+            <div class="font-medium">${f.displayName}</div>
+            <div class="text-xs text-green-400">${f.status}</div>
+          </div>
+        </div>
+      `).join('');
+
+      app.innerHTML = `
+        <div class="bg-npurple-dark rounded shadow w-80 overflow-hidden">
+          ${user.bannerURL ? `<div class="h-24 bg-cover" style="background-image:url('${user.bannerURL}')"></div>` : ''}
+          <div class="p-4">
+            <div class="flex items-center gap-3 mb-4">
+              <img src="${user.profilePic}" class="rounded-full w-12 h-12 cursor-pointer" onclick="openSettings()" />
+              <div>
+                <div class="text-xl font-bold cursor-pointer" onclick="openSettings()">${user.displayName}</div>
+                <div class="text-sm italic text-ntext">${user.bio}</div>
+              </div>
+            </div>
+            <h3 class="text-sm text-ntext mb-2">Friends</h3>
+            ${friendsHTML}
+            <button onclick="openAddFriend()" class="mt-4 w-full py-2 rounded button-npurple">Add Friend</button>
+            <button onclick="openGroupChat()" class="mt-2 w-full py-2 rounded button-npurple">Group Chat</button>
+            <button onclick="logout()" class="mt-2 w-full py-2 rounded border border-ntext text-ntext">Logout</button>
+          </div>
+        </div>
+        <div id="chatWindow" class="absolute top-10 right-10"></div>`;
+    }
+
+    function openAddFriend() {
+      modalTitle.innerText = "Add Friend by NPUB";
+      modalBody.innerHTML = `<input id="npub-input" type="text" class="w-full p-2 rounded input-npurple" placeholder="npub...">`;
+      modalSave.onclick = () => {
+        const npub = document.getElementById('npub-input').value.trim();
+        if (npub) {
+          user.friends.push({ username: npub, displayName: npub, status: "Offline", profilePic:"https://via.placeholder.com/40" });
+          closeModal(); renderFriendList();
+        }
+      };
+      showModal();
+    }
+
+    function openSettings() {
+      modalTitle.innerText = "Edit Profile Settings";
+      modalBody.innerHTML = `
+        <input id="set-display" class="w-full p-2 rounded input-npurple" placeholder="Display Name" value="${user.displayName}">
+        <input id="set-pic" class="w-full p-2 rounded input-npurple" placeholder="Profile Pic URL" value="${user.profilePic}">
+        <input id="set-banner" class="w-full p-2 rounded input-npurple" placeholder="Banner URL" value="${user.bannerURL}">
+        <textarea id="set-bio" class="w-full p-2 rounded input-npurple" placeholder="Bio">${user.bio}</textarea>
+      `;
+      modalSave.onclick = () => {
+        user.displayName = document.getElementById('set-display').value.trim() || user.displayName;
+        user.profilePic = document.getElementById('set-pic').value.trim() || user.profilePic;
+        user.bannerURL = document.getElementById('set-banner').value.trim();
+        user.bio = document.getElementById('set-bio').value.trim();
+        closeModal(); renderFriendList();
+      };
+      showModal();
+    }
+
+    function showModal() {
+      modal.classList.remove('hidden');
+      modal.classList.add('flex');
+    }
+    function closeModal() {
+      modal.classList.add('hidden');
+      modal.classList.remove('flex');
+    }
+
+    function openChat(username) {
+      currentChat = username;
+      const friend = user.friends.find(f => f.username === username);
+      renderChatWindow([friend], false);
+    }
+
+    function openGroupChat() {
+      currentChat = 'group';
+      renderChatWindow(user.friends, true);
+    }
+
+    function renderChatWindow(friends, isGroup) {
+      const chatWindow = document.getElementById('chatWindow');
+      const key = isGroup ? 'chat-group' : `chat-${friends[0].username}`;
+      const messages = JSON.parse(localStorage.getItem(key) || '[]');
+      chatWindow.innerHTML = `
+        <div class="chat-window relative">
+          <button onclick="closeChat()" class="absolute top-2 right-2 text-ntext hover:text-white">✖</button>
+          <div class="flex items-center gap-3 mb-2">
+            <img src="${friends[0].profilePic}" class="rounded-full w-16 h-16" />
+            <div class="text-lg font-bold">${friends[0].displayName}</div>
+          </div>
+          <div id="chatContent" class="flex-1 overflow-y-auto p-2">
+            ${messages.map(m => `
+              <div class="message ${m.from==='me'?'me':''} mb-2">
+                <div class="text p-3 rounded-lg inline-block">${m.text}<span class="block mt-1 text-xs text-gray-400">${m.time}</span></div>
+              </div>
+            `).join('')}
+          </div>
+          <div class="input-container mt-2 flex items-center gap-2">
+            <input id="msgInput" class="flex-1 p-2 rounded input-npurple" placeholder="Type a message..." />
+            <button onclick="sendMessage(${isGroup})" class="px-4 py-2 rounded button-npurple">Send</button>
+          </div>
+        </div>`;
+      document.getElementById('chatContent').scrollTop = 9999;
+    }
+
+    function closeChat() {
+      document.getElementById('chatWindow').innerHTML = "";
+    }
+
+    function sendMessage(isGroup) {
+      const input = document.getElementById('msgInput');
+      const text = input.value.trim();
+      if (!text) return;
+      const key = isGroup ? 'chat-group' : `chat-${currentChat}`;
+      const msgs = JSON.parse(localStorage.getItem(key) || '[]');
+      msgs.push({ from:'me', text, time:new Date().toLocaleTimeString() });
+      localStorage.setItem(key, JSON.stringify(msgs));
+      if (isGroup) openGroupChat(); else openChat(currentChat);
+      input.value = "";
+    }
+
+    renderLogin();
+  </script>
+</body>
+</html>
+
     validateEvent,
     verifySignature,
     relayInit
