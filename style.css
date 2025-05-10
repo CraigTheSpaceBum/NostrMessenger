@@ -1,0 +1,43 @@
+  :root {
+      --nostr-purple: #7F00FF;
+      --nostr-purple-dark: #4B0082;
+      --nostr-text: #E0DAF5;
+    }
+    body {
+      background-color: var(--nostr-purple-dark);
+      color: var(--nostr-text);
+    }
+    .bg-npurple { background-color: var(--nostr-purple); }
+    .bg-npurple-dark { background-color: var(--nostr-purple-dark); }
+    .text-ntext { color: var(--nostr-text); }
+    .input-npurple {
+      background-color: var(--nostr-purple-dark);
+      border: 1px solid var(--nostr-purple);
+      color: var(--nostr-text);
+    }
+    .button-npurple {
+      background-color: var(--nostr-purple);
+      color: var(--nostr-text);
+    }
+    .button-npurple:hover {
+      background-color: var(--nostr-purple-dark);
+    }
+    .chat-window {
+      background-color: var(--nostr-purple-dark);
+      border-radius: 10px;
+      padding: 15px;
+      max-width: 400px;
+      width: 100%;
+      height: 500px;
+      overflow-y: auto;
+      box-shadow: 0 2px 10px rgba(0, 0, 0, 0.5);
+      display: flex;
+      flex-direction: column;
+    }
+    .message .text {
+      background-color: var(--nostr-purple);
+      color: var(--nostr-text);
+    }
+    .modal-backdrop {
+      background: rgba(0,0,0,0.7);
+    }
