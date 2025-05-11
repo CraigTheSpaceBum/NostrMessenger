@@ -119,17 +119,30 @@
             <img src="${friends[0].profilePic}" class="rounded-full w-16 h-16" />
             <div class="text-lg font-bold">${friends[0].displayName}</div>
           </div>
+          <div class="text-sm font-bold">${friends[0].statusMessage}</div>
           <div id="chatContent" class="flex-1 overflow-y-auto p-2">
-            ${messages.map(m => `
-              <div class="message ${m.from==='me'?'me':''} mb-2">
-                <div class="text p-3 rounded-lg inline-block">${m.text}<span class="block mt-1 text-xs text-gray-400">${m.time}</span></div>
-              </div>
-            `).join('')}
+           ${messages.map(m => {
+  const isImage = m.text.match(/\.(jpeg|jpg|gif|png|webp)$/i);
+  const content = isImage
+    ? `<img src="${m.text}" class="max-w-[200px] rounded-lg border border-gray-600" />`
+    : m.text;
+  return `
+    <div class="message ${m.from==='me'?'me':''} mb-2">
+      <div class="text p-3 rounded-lg inline-block">
+        ${content}
+        <span class="block mt-1 text-xs text-gray-400">${m.time}</span>
+      </div>
+    </div>
+  `;
+}).join('')}
+
           </div>
-          <div class="input-container mt-2 flex items-center gap-2">
-            <input id="msgInput" class="flex-1 p-2 rounded input-npurple" placeholder="Type a message..." />
-            <button onclick="sendMessage(${isGroup})" class="px-4 py-2 rounded button-npurple">Send</button>
-          </div>
+    <div class="input-container mt-2 flex items-center gap-2">
+  <input id="msgInput" class="flex-1 p-2 rounded input-npurple" placeholder="Type a message..." />
+  <button onclick="sendMessage(${isGroup})" class="px-4 py-2 rounded button-npurple">Send</button>
+  <button onclick="zapFriend()" class="px-3 py-2 rounded text-white" style="background-color: #f7931a;">Zap ⚡</button>
+</div>
+
         </div>`;
       document.getElementById('chatContent').scrollTop = 9999;
     }
@@ -149,5 +162,21 @@
       if (isGroup) openGroupChat(); else openChat(currentChat);
       input.value = "";
     }
+
+    function zapFriend() {
+  const chatWindow = document.querySelector('.chat-window');
+  if (!chatWindow) return;
+
+  chatWindow.classList.add('shake');
+  setTimeout(() => chatWindow.classList.remove('shake'), 500);
+
+  // Optional: Log the zap in chat (like a message)
+  const key = currentChat === 'group' ? 'chat-group' : `chat-${currentChat}`;
+  const msgs = JSON.parse(localStorage.getItem(key) || '[]');
+  msgs.push({ from: 'me', text: '💥 You zapped them!', time: new Date().toLocaleTimeString() });
+  localStorage.setItem(key, JSON.stringify(msgs));
+  if (currentChat === 'group') openGroupChat(); else openChat(currentChat);
+}
+
 
     renderLogin();
