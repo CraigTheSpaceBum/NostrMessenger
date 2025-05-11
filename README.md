@@ -8,9 +8,6 @@ A retro MSN Messenger-style chat app powered by the decentralized [Nostr](https:
 
 ## 🚀 Features (Working)
 
-- 🪪 **Temporary NSEC-based Login** *(extension login planned)*  
-  For now, users can log in using their Nostr private key (`nsec`). Extension-based auth (e.g., Nostr Connect, Alby) is on the roadmap.
-
 - 🧑‍🤝‍🧑 **Friend List with Presence Display**  
   View online/offline status, profile picture, and custom status message.
 
