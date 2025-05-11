@@ -87,5 +87,5 @@ A retro MSN Messenger-style chat app powered by the decentralized [Nostr](https:
 ## 🧑‍💻 Local Setup
 
 ```bash
-git clone https://github.com/yourusername/nostr-messenger.git
+git clone https://github.com/CraigTheSpaceBum/NostrMessenger.git
 cd nostr-messenger
