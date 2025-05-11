@@ -2,6 +2,8 @@
 
 A retro MSN Messenger-style chat app powered by the decentralized [Nostr](https://nostr.com) protocol. Designed to revive the nostalgic chat experience from 2005–2009, with modern decentralized technology.
 
+https://craigthespacebum.github.io/NostrMessenger/
+
 ![screenshot](https://via.placeholder.com/600x300) <!-- Replace this with a screenshot of your app -->
 
 ---
